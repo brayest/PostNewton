@@ -60,7 +60,7 @@ void PostNewtonNcuerposV2 ( double x, double **y, double **dvdt, double *M, int 
                 for ( l = 0; l < coordenadas; l++) {
                   CONST[0] = CONST[0] + Xab[z][k][l]*Xab[k][w][l]; // Xab*Xbc
                 }
-                SUM[4] = SUM[4] + G*M[w]/pow(Rab[k][w],3)*CONST[0];
+                SUM[4] = SUM[4] + G*M[w]*CONST[0]/pow(Rab[k][w],3);
                 SUM[6] = SUM[6] + G*M[w]*Xab[k][w][v-3]/pow(Rab[k][w],3);
                 
               }
@@ -76,7 +76,7 @@ void PostNewtonNcuerposV2 ( double x, double **y, double **dvdt, double *M, int 
             CONST[5] = CONST[5] + Xab[z][k][l]*VAR[l]; // Xab*(4Va-3Vb)
           }
           SUM[1] = SUM[1] + (G*M[k]*Xab[z][k][v-3])/pow(Rab[z][k],3)*( (4*G*M[k])/Rab[z][k]  
-          + (5*G*M[z])/Rab[z][k] + SUM[2] + 4*SUM[3] - 0.5*SUM[4] - CONST[1] +4*CONST[2] - 2*CONST[3] - (3.0/2.0)*pow(CONST[4],2));
+          + (5*G*M[z])/Rab[z][k] + SUM[2] + 4*SUM[3] - 0.5*SUM[4] - CONST[1] +4*CONST[2] - 2*CONST[3] + (3.0/2.0)*pow(CONST[4],2));
           SUM[5] = SUM[5] + (G*M[k]/Rab[z][k])*SUM[6];
           SUM[7] = SUM[7] + G*M[k]*CONST[5]*Vab[z][k][v-3]/pow(Rab[z][k],3);
         }
@@ -106,7 +106,7 @@ void PostNewtonNcuerposV2 ( double x, double **y, double **dvdt, double *M, int 
 main (int argc, char *argv[]) {
   
   // Definición numero de cuerpos
-  int cuerpos = 2;
+  int cuerpos = 3;
   int variables = 6;
   int coordenadas = 3;
   int i,j,k,z,w;
@@ -145,9 +145,12 @@ main (int argc, char *argv[]) {
 
   
   masas[0] = 1.989e30;
-  masas[1] = 5.872e24;
+  masas[1] = 1.989e30;
+//  masas[1] = 5.872e24;
 //  masas[2] = 7.349e22;
+  masas[2] = 5.872e24;
 
+/*
   iniciales[0][0] = 0;
   iniciales[0][1] = 0;
   iniciales[0][2] = 0;
@@ -157,11 +160,16 @@ main (int argc, char *argv[]) {
   iniciales[1][2] = 0;
   iniciales[1][3] = 0;
   iniciales[1][5] = 0;
+*/
+
+// Dos Cuerpos, Orbita Circular E = 0  
+/*  
   iniciales[1][4] = 28.73e3;
   iniciales[0][4] = -(masas[1]/masas[0])*iniciales[1][4];
   iniciales[1][0] = G*masas[0]/pow(iniciales[1][4],2); 
+*/
 
-// 	Tierra, Sol, Luna
+// 	Tierra, Sol, Luna, Orbita Circular 
 /*
   iniciales[2][1] = 0;
   iniciales[2][2] = 0;
@@ -171,9 +179,45 @@ main (int argc, char *argv[]) {
   iniciales[0][4] = -(masas[1]/masas[0])*iniciales[1][4];  // Vy1 para conservar momentum
   iniciales[1][0] = G*masas[0]/pow(iniciales[1][4],2); // X2 dependiente de velocidad para Orbita circular ( E = 0 )
   iniciales[2][0] = G*(masas[1])/pow(iniciales[2][4]-iniciales[1][4],2)+iniciales[1][0]; // radio de luna
-
 */
+
+
+
+  // Tres Cuerpos, Prueba PNewton  
   
+  //Rxs
+  iniciales[0][0] = 0;
+  iniciales[1][0] = 0;
+  //iniciales[2][0] = 0;
+  
+  //Rzs
+  iniciales[0][2] = 0;
+  iniciales[1][2] = 0;
+  iniciales[2][2] = 0;
+  
+  //Vxs
+  iniciales[1][3] = 38.73e4;
+  iniciales[0][3] = -(masas[1]/masas[0])*iniciales[1][3];
+  iniciales[2][3] = 0;
+  
+  //Rys
+  iniciales[0][1] = 0.5*(G*masas[1]*0.5)/pow(iniciales[0][3],2);
+  iniciales[1][1] = -0.5*(G*masas[0]*0.5)/pow(iniciales[1][3],2);
+  iniciales[2][1] = 0;
+  
+  //Vys
+  iniciales[0][4] = 0;
+  iniciales[1][4] = 0;
+  iniciales[2][4] = 6*28.73e3;
+  iniciales[2][0] = 321579694235.455/25.0;//2*G*masas[1]/pow(iniciales[2][4],2);
+  
+//  printf("%.3f\n",iniciales[2][0]);
+  
+  //Vzs
+  iniciales[0][5] = 0;
+  iniciales[1][5] = 0;
+  iniciales[2][5] = 0;
+ 
   
   
   for (i = 0; i < cuerpos; i++) {
@@ -200,7 +244,8 @@ main (int argc, char *argv[]) {
   out = fopen("SolucionNPN.dat","w");
   
   for ( i = 0; i < cuerpos; i++) {
-    printf("%d	Masa: %f",i,masas[i]);
+    printf("Masa:	%.f	\n",masas[i]);
+    printf("%d	",i);
     for ( j = 0; j < variables; j++) {
       printf("%.3f	",iniciales[i][j]);
     }
@@ -270,7 +315,7 @@ main (int argc, char *argv[]) {
       fprintf(out,"%.10f	%.10f		",tiempo,Energia/divisor);
       for ( j = 0; j < cuerpos; j++) {
         for ( k = 0; k < variables/2; k++) {
-          fprintf(out, "%.15f	",movimiento[j][k]);
+          fprintf(out, "%.5f	",movimiento[j][k]);
         }
       }
     fprintf(out,"\n");
